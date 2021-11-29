@@ -4566,14 +4566,14 @@ public:
 
 					case OPCODE_BUFINFO:
 					{
-						remapTarget(op1);
+						remapTarget(op2);
 						int textureId;
-						sscanf_s(op2, "t%d", &textureId);
+						sscanf_s(op3, "t%d", &textureId);
 						sprintf(buffer, "    %s.GetDimensions(%s);\n",
 							mTextureNames[textureId].c_str(), 
-							writeTarget(op1));
+							writeTarget(op2));
 						appendOutput(buffer);
-						removeBoolean(op1);
+						removeBoolean(op2);
 						break;
 					}
 
