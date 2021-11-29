@@ -768,7 +768,22 @@ public:
 					logDecompileError("Unknown texture dimension: " + string(dim));
 			}
 			else if (!strcmp(type, "cbuffer"))
-				mCBufferNames[name] = slot;
+			{
+				if (mCBufferNames.find(name) != mCBufferNames.end())
+				{
+					//如果已经有了，则名字后面加1
+					//实际测试的shader是前后颠倒了，// Resource Bindings:前面一个是
+					//// Buffer Definitions: 的后一个，所以这里反序下好了
+					int oldSlot = mCBufferNames[name];
+					mCBufferNames[name] = slot;
+					strcat(name, "_1");
+					mCBufferNames[name] = oldSlot;
+				}
+				else
+				{
+					mCBufferNames[name] = slot;
+				}
+			}
 			NextLine(c, pos, size);
 			// End?
 			if (!strncmp(c + pos, "//\n", 3) || !strncmp(c + pos, "//\r", 3))
@@ -904,6 +919,7 @@ public:
 		// Search for buffer.
 		const char *headerid = "// cbuffer ";
 		size_t pos = 0;
+		map<string, bool> names;
 		while (pos < size - strlen(headerid))
 		{
 			// Read next buffer.
@@ -924,6 +940,11 @@ public:
 				logDecompileError("Error parsing buffer name: " + string(c + pos, 80));
 				return;
 			}
+			if (names.find(name) != names.end())
+			{
+				strcat(name, "_1");
+			}
+			names[name] = true;
 			NextLine(c, pos, size);
 			NextLine(c, pos, size);
 			// Map buffer name to register.
@@ -4540,6 +4561,19 @@ public:
 							appendOutput(buffer);
 							++idx;
 						}
+						break;
+					}
+
+					case OPCODE_BUFINFO:
+					{
+						remapTarget(op1);
+						int textureId;
+						sscanf_s(op2, "t%d", &textureId);
+						sprintf(buffer, "    %s.GetDimensions(%s);\n",
+							mTextureNames[textureId].c_str(), 
+							writeTarget(op1));
+						appendOutput(buffer);
+						removeBoolean(op1);
 						break;
 					}
 
