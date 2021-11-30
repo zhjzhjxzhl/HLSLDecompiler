@@ -777,7 +777,7 @@ static HRESULT AssembleFlugan(vector<char> *assembly, string *bytecode)
 	return S_OK;
 }
 
-static HRESULT Decompile(const void *pShaderBytecode, size_t BytecodeLength, string *hlslText, string *shaderModel)
+static HRESULT Decompile(const void *pShaderBytecode, size_t BytecodeLength, string *hlslText, string *shaderModel,string* dis)
 {
 	// Set all to zero, so we only init the ones we are using here:
 	ParseParameters p = {0};
@@ -804,6 +804,8 @@ static HRESULT Decompile(const void *pShaderBytecode, size_t BytecodeLength, str
 		LogInfo("    error while decompiling\n");
 		return E_FAIL;
 	}
+	//*hlslText = p.decompiled + *hlslText;
+	*dis = string(p.decompiled);
 
 	return S_OK;
 }
@@ -902,6 +904,7 @@ static int process(string const *filename)
 {
 	HRESULT hret;
 	string output;
+	string outputDis;
 	vector<char> srcData;
 	string model;
 
@@ -957,9 +960,11 @@ static int process(string const *filename)
 
 	if (args.decompile) {
 		LogInfo("Decompiling %s...\n", filename->c_str());
-		hret = Decompile(srcData.data(), srcData.size(), &output, &model);
+		hret = Decompile(srcData.data(), srcData.size(), &output, &model,&outputDis);
+
 		if (FAILED(hret))
-			return EXIT_FAILURE;
+			return EXIT_FAILURE; 
+		WriteOutput(filename, ".msasm", &outputDis);
 
 		if (args.validate) {
 			if (validate_hlsl(&output, &model))
